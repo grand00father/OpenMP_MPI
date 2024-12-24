@@ -6,27 +6,25 @@
 #include <ctime>
 
 int main() {
-    const std::vector<int> vector_sizes = { 1000, 10000, 100000, 1000000 }; // Размерности векторов
-    const std::vector<int> thread_counts = { 1, 2, 4, 8 };                  // Количество потоков
+    const std::vector<int> vector_sizes = { 1000, 10000, 100000, 1000000 }; // vector dimension
+    const std::vector<int> thread_counts = { 1, 2, 4, 8 };                  // number of threads
 
     std::cout << "Vector Size | Threads | Reduction Time (s) | No Reduction Time (s) | Speedup (Reduction) | Speedup (No Reduction)\n";
 
     for (int size : vector_sizes) {
         std::vector<int> data(size);
 
-        // Заполняем вектор случайными числами
         std::srand(std::time(nullptr));
         for (int i = 0; i < size; i++) {
-            data[i] = std::rand() % 1000; // Диапазон значений от 0 до 999
+            data[i] = std::rand() % 1000; // from 0 to 999
         }
 
-        // Переменные для времени с одним потоком (для редукции)
+        // 1 thread with reduction
         omp_set_num_threads(1);
 
         int min_value = std::numeric_limits<int>::max();
         int max_value = std::numeric_limits<int>::min();
 
-        // Измеряем время выполнения с одним потоком с редукцией
         double start_time = omp_get_wtime();
         #pragma omp parallel for reduction(min:min_value) reduction(max:max_value)
         for (int i = 0; i < size; i++) {
@@ -35,10 +33,10 @@ int main() {
         }
         double one_thread_reduction_time = omp_get_wtime() - start_time;
 
+        // 1 thread without reduction
         min_value = std::numeric_limits<int>::max();
         max_value = std::numeric_limits<int>::min();
 
-        // Измеряем время выполнения с одним потоком без редукции
         start_time = omp_get_wtime();
         #pragma omp parallel
         {
@@ -59,24 +57,24 @@ int main() {
         }
         double one_thread_no_reduction_time = omp_get_wtime() - start_time;
 
-        // Теперь выводим результаты для 1 потока
+        // result for 1 thread
         std::cout << size << "         | "
             << 1 << "       | "
             << one_thread_reduction_time << "             | "
             << one_thread_no_reduction_time << "               | "
             << 1.0 << "              | "
-            << 1.0 << "\n"; // Для 1 потока ускорение всегда 1
+            << 1.0 << "\n"; 
 
-        // Для остальных потоков
+        // for other threads
         for (int threads : thread_counts) {
-            if (threads == 1) continue; // Пропускаем уже измеренные для 1 потока
+            if (threads == 1) continue; 
 
             omp_set_num_threads(threads);
 
             min_value = std::numeric_limits<int>::max();
             max_value = std::numeric_limits<int>::min();
 
-            // Измеряем время выполнения с редукцией
+            // with reduction
             start_time = omp_get_wtime();
             #pragma omp parallel for reduction(min:min_value) reduction(max:max_value)
             for (int i = 0; i < size; i++) {
@@ -85,11 +83,10 @@ int main() {
             }
             double reduction_time = omp_get_wtime() - start_time;
 
-            // Без редукции
+            // without reduction
             min_value = std::numeric_limits<int>::max();
             max_value = std::numeric_limits<int>::min();
 
-            // Измеряем время выполнения без редукции
             start_time = omp_get_wtime();
             #pragma omp parallel
             {
@@ -110,11 +107,11 @@ int main() {
             }
             double no_reduction_time = omp_get_wtime() - start_time;
 
-            // Рассчитываем ускорение для редукции и без редукции (t на одном/t текущее)
+            // speedup (t on 1/t on the current)
             double speedup_reduction = one_thread_reduction_time / reduction_time;
             double speedup_no_reduction = one_thread_no_reduction_time / no_reduction_time;
 
-            // Вывод результатов
+            //results
             std::cout << size << "         | "
                 << threads << "       | "
                 << reduction_time << "             | "
